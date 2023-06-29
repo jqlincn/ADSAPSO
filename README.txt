@@ -14,4 +14,4 @@ README
 %--------------------------------------------------------------------------
 
 
-The Code of ADSAPSO is run in PlatEMO 2.8 using MATLAB.
+The Code of ADSAPSO is run in PlatEMO 4.0 using MATLAB.
