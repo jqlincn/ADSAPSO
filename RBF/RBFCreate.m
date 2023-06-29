@@ -1,5 +1,5 @@
 function para = RBFCreate(ax, ay, kernel)
-
+warning('off')
 [N, D] = size(ax);
 
 % Normlization
