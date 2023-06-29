@@ -1,4 +1,4 @@
-function Offspring = Operator(Global,Population,NP,k,beta,N_a)
+function Offspring = Operator(Problem,Arc,k,beta,N_a,N_s)
 
 %------------------------------- Copyright --------------------------------
 % Copyright (c) 2018-2019 BIMK Group. You are free to use the PlatEMO for
@@ -12,21 +12,17 @@ function Offspring = Operator(Global,Population,NP,k,beta,N_a)
 % This function is written by Jianqing Lin
     
     %% Environmental Selection
-    if size(Population,2) > N_a
-        [Population,FrontNo,CrowdDis] = EnvironmentalSelection(Population,N_a);
-    else
-        [Population,FrontNo,CrowdDis] = EnvironmentalSelection(Population,size(Population,2));
-    end
+    [Arc,FrontNo,CrowdDis] = EnvironmentalSelection(Arc,min(N_a,size(Arc,2)));
 
     %% Parameter setting     
-    PopDec = Population.decs;
-    D      = Global.D;
-    M      = Global.M;
-    N_s    = 50;        % The number of the well- and poorly performing solutions
-    
+    PopDec = Arc.decs;
+    D      = Problem.D;
+    M      = Problem.M;
+    NP     = Problem.N;
+
     %% Solution Sort & Selection
     [~,index_FNCD] = sortrows([FrontNo;CrowdDis]',[1,-2]);
-    Offspring_D    = PopDec(index_FNCD(1:k),:);
+    Candidate_D    = PopDec(index_FNCD(1:k),:);
     
     Index_Well = index_FNCD(1:N_s);
     Index_Poor = index_FNCD(end-N_s+1:end);
@@ -34,31 +30,26 @@ function Offspring = Operator(Global,Population,NP,k,beta,N_a)
     %% Statistics Mean Value
     Model_Dif      = mean(PopDec(Index_Well,:))-mean(PopDec(Index_Poor,:)); 
     Model_Dif_sort = sort(abs(Model_Dif),'descend');
+
+    %% Selected beta*D Decision Variables
+    Index_dif = find(abs(Model_Dif) >= Model_Dif_sort(ceil(beta*D)));
     
-    % Keep small probability for random dropout
-    if rand > 0.2  
-        Index_dif = find(abs(Model_Dif) >= Model_Dif_sort(ceil(beta*D)));
-    else
-        Index_dif = randi([1,D],1,ceil(beta*D));
-    end
-    
-    %% Dropout d from D
+    %% Build RBF Models for Low-dimensional Decision Space
     Decs_Surrogate = PopDec(:,Index_dif);
-    Objs_Surrogate = Population.objs;
+    Objs_Surrogate = Arc.objs;
     
-    %% Build RBF-Surrogate 
     for i = 1 : M
-        RBF_para{i} = RBFCreate(Decs_Surrogate, Objs_Surrogate(:,i), 'cubic');
+        RBF_para{i} = RBFCreate(Decs_Surrogate, Objs_Surrogate(:,i), 'gaussian');
     end
    
-    %% Reproduction
-    Population      = EnvironmentalSelection(Population,NP);
+    %% Reproduction by RBF-assisted PSO
+    Population      = EnvironmentalSelection(Arc,NP);
     PopDec          = Population.decs;
     Pop_Surrogate   = Surrogate_individual(PopDec(:,Index_dif),Population.objs);
-    Offspring_d     = Reproduction(Global,Pop_Surrogate,RBF_para,Index_dif);
+    Offspring_d     = Reproduction(Problem,Pop_Surrogate,RBF_para,Index_dif);
     
-    %% Replacement
+    %% Replacement 
     Offspring_d              = EnvironmentalSelection(Offspring_d,k);
-    Offspring_D(:,Index_dif) = Offspring_d.decs;
-    Offspring                = Offspring_D;
+    Candidate_D(:,Index_dif) = Offspring_d.decs;
+    Offspring                = Candidate_D;
 end

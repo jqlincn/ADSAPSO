@@ -1,5 +1,5 @@
-function ADSAPSO(Global)
-% <algorithm> <A>
+classdef ADSAPSO < ALGORITHM
+% <multi/many> <real/integer> <expensive>
 % k    ---  5  --- Number of re-evaluated solutions
 % beta --- 0.5 --- Percentage of Dropout
 
@@ -17,21 +17,25 @@ function ADSAPSO(Global)
 %--------------------------------------------------------------------------
 
 % This function is written by Jianqing Lin
-    warning('off')
+    methods
+        function main(Algorithm, Problem)
     
-    %% Parameter setting
-    [k,beta] = Global.ParameterSet(5,0.5);
-    Init_Num = 500;     % Initial number of solutions
-    N_a      = 200;     % The number of solutions for building surrogate models
-    
-    %% Generate initial population
-    PopDec       = repmat((Global.upper - Global.lower),Init_Num, 1) .* lhsdesign(Init_Num, Global.D) + repmat(Global.lower, Init_Num, 1);  % lhs design
-    Population   = INDIVIDUAL(PopDec);
-    
-    %% Optimization
-    while Global.NotTermination(Population)
-        Offspring  = Operator(Global,Population,Global.N,k,beta,N_a);
-        Offspring  = INDIVIDUAL(Offspring);
-        Population = [Population,Offspring];
+            %% Parameter setting
+            [k,beta] = Algorithm.ParameterSet(5,0.5);
+            Init_Num = 100;     % Initial number of solutions
+            N_a      = 200;     % The number of solutions for building surrogate models
+            N_s      = 50;      % The number of the well- and poorly performing solutions
+
+            %% Generate initial population
+            InitDec  = repmat((Problem.upper - Problem.lower),Init_Num, 1).* lhsdesign(Init_Num, Problem.D) + repmat(Problem.lower, Init_Num, 1);  % lhs design
+            Arc      = Problem.Evaluation(InitDec);
+            
+            %% Optimization
+            while Algorithm.NotTerminated(Arc)
+                Offspring  = Operator(Problem,Arc,k,beta,N_a,N_s);
+                Offspring  = Problem.Evaluation(Offspring);
+                Arc        = [Arc,Offspring];
+            end
+        end
     end
 end

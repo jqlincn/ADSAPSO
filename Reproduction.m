@@ -1,4 +1,4 @@
-function Offspring = Reproduction(Global,Particle,RBF_para,Index_dif)
+function Offspring = Reproduction(Problem,Particle,RBF_para,Index_dif)
 
 %------------------------------- Copyright --------------------------------
 % Copyright (c) 2018-2019 BIMK Group. You are free to use the PlatEMO for
@@ -45,10 +45,10 @@ function Offspring = Reproduction(Global,Particle,RBF_para,Index_dif)
     end
     
     %% Polynomial mutation
-    if Global.evaluated >= Global.evaluation*0.75
+    if Problem.FE >= Problem.maxFE*0.75
         
-        Lower = repmat(Global.lower,N,1);
-        Upper = repmat(Global.upper,N,1);
+        Lower = repmat(Problem.lower,N,1);
+        Upper = repmat(Problem.upper,N,1);
         Lower = Lower(:,Index_dif);
         Upper = Upper(:,Index_dif);
         Site  = rand(N,D) < proM/D;
@@ -70,7 +70,7 @@ function Offspring = Reproduction(Global,Particle,RBF_para,Index_dif)
 end
 
 function [Gbest,CrowdDis] = UpdateGbest(Gbest,N)
-    % Update the global best set
+    % Update the Problem best set
     Gbest    = Gbest(NDSort(Gbest.objs,1)==1);
     CrowdDis = CrowdingDistanceSameFront(Gbest.objs);
     [~,rank] = sort(CrowdDis,'descend');
